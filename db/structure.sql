@@ -29,6 +29,19 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
+--
+-- Name: state; Type: TYPE; Schema: pgmq; Owner: -
+--
+
+CREATE TYPE pgmq.state AS ENUM (
+    'scheduled',
+    'working',
+    'retry',
+    'dead',
+    'done'
+);
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -39,8 +52,161 @@ SET default_with_oids = false;
 
 CREATE TABLE pgmq.jobs (
     id bigint NOT NULL,
-    name character varying
+    queue character varying DEFAULT 'default'::character varying,
+    jobtype character varying NOT NULL,
+    args jsonb DEFAULT '"[]"'::jsonb,
+    priority integer DEFAULT 5,
+    created_at timestamp without time zone,
+    enqueued_at timestamp without time zone,
+    competed_at timestamp without time zone,
+    state pgmq.state DEFAULT 'scheduled'::pgmq.state NOT NULL,
+    at timestamp without time zone,
+    redo_after integer,
+    reserve_for integer DEFAULT 600,
+    retry integer DEFAULT 25,
+    backtrace integer DEFAULT 0,
+    custom jsonb DEFAULT '"{}"'::jsonb,
+    failure jsonb DEFAULT '"{}"'::jsonb,
+    worker_id bigint,
+    CONSTRAINT args CHECK ((jsonb_typeof(args) = 'array'::text))
 );
+
+
+--
+-- Name: TABLE jobs; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON TABLE pgmq.jobs IS 'Jobs for pgmq';
+
+
+--
+-- Name: COLUMN jobs.queue; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.queue IS 'Push this job to a particular queue. The default queue is, unsurprisingly, "default".';
+
+
+--
+-- Name: COLUMN jobs.jobtype; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.jobtype IS 'The worker uses jobtype to determine how to execute this job';
+
+
+--
+-- Name: COLUMN jobs.args; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.args IS 'The args is an array of parameters necessary for the job to execute, it may be empty.';
+
+
+--
+-- Name: COLUMN jobs.priority; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.priority IS 'Priority within the queue, may be 1-9, default is 5. 9 is high priority, 1 is low priority.';
+
+
+--
+-- Name: COLUMN jobs.created_at; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.created_at IS 'The client may set this or Pgmq will fill it in when it receives a job.';
+
+
+--
+-- Name: COLUMN jobs.enqueued_at; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.enqueued_at IS 'Worker will set this when it enqueues a job';
+
+
+--
+-- Name: COLUMN jobs.competed_at; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.competed_at IS 'Worker will set when this job completed at.';
+
+
+--
+-- Name: COLUMN jobs.state; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.state IS 'state for current job';
+
+
+--
+-- Name: COLUMN jobs.at; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.at IS 'Schedule a job to run at a point in time. 
+The job will be enqueued within a few seconds of that point in time. 
+';
+
+
+--
+-- Name: COLUMN jobs.redo_after; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.redo_after IS 'Worker will enqueue this job after N second, it can act as crontab';
+
+
+--
+-- Name: COLUMN jobs.reserve_for; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.reserve_for IS 'Set the reservation timeout for a job, in seconds. 
+When a worker fetches a job, it has up to N seconds to ACK or FAIL the job. 
+After N seconds, the job will be requeued for execution by another worker. 
+Default is 1800 seconds or 30 minutes, minimum is 60 seconds.
+';
+
+
+--
+-- Name: COLUMN jobs.retry; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.retry IS 'Set the number of retries to perform if this job fails. 
+Default is 25. 
+A value of 0 means the job will not be retried and will be discarded if it fails. 
+A value of -1 means don''t retry but move the job immediately to the Dead set if it fails.
+';
+
+
+--
+-- Name: COLUMN jobs.backtrace; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.backtrace IS 'Retain up to N lines of backtrace given to the FAIL command. 
+Default is 0.  
+Best practice is to integrate your workers with an existing error service, 
+but you can enable this to get a better view of why a job is retrying in the Web UI.
+';
+
+
+--
+-- Name: COLUMN jobs.custom; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.custom IS 'This can be extremely helpful for cross-cutting concerns which should propagate between systems, 
+e.g. locale for user-specific text translations, 
+request_id for tracing execution across a complex distributed system
+';
+
+
+--
+-- Name: COLUMN jobs.failure; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.failure IS 'A hash with data about this job''s most recent failure
+';
+
+
+--
+-- Name: COLUMN jobs.worker_id; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.jobs.worker_id IS 'Which worker run this job';
 
 
 --
@@ -60,6 +226,68 @@ CREATE SEQUENCE pgmq.jobs_id_seq
 --
 
 ALTER SEQUENCE pgmq.jobs_id_seq OWNED BY pgmq.jobs.id;
+
+
+--
+-- Name: workers; Type: TABLE; Schema: pgmq; Owner: -
+--
+
+CREATE TABLE pgmq.workers (
+    id bigint NOT NULL,
+    hostname character varying NOT NULL,
+    pid integer NOT NULL,
+    v character varying DEFAULT '1.0'::character varying,
+    labels character varying[] DEFAULT '{}'::character varying[],
+    started_at timestamp without time zone,
+    last_active_at timestamp without time zone
+);
+
+
+--
+-- Name: TABLE workers; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON TABLE pgmq.workers IS 'Workers for pgmq';
+
+
+--
+-- Name: COLUMN workers.hostname; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.workers.hostname IS 'Worker hostname';
+
+
+--
+-- Name: COLUMN workers.pid; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.workers.pid IS 'Worker process id';
+
+
+--
+-- Name: COLUMN workers.v; Type: COMMENT; Schema: pgmq; Owner: -
+--
+
+COMMENT ON COLUMN pgmq.workers.v IS 'Worker version';
+
+
+--
+-- Name: workers_id_seq; Type: SEQUENCE; Schema: pgmq; Owner: -
+--
+
+CREATE SEQUENCE pgmq.workers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: workers_id_seq; Type: SEQUENCE OWNED BY; Schema: pgmq; Owner: -
+--
+
+ALTER SEQUENCE pgmq.workers_id_seq OWNED BY pgmq.workers.id;
 
 
 --
@@ -91,11 +319,26 @@ ALTER TABLE ONLY pgmq.jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq
 
 
 --
+-- Name: workers id; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.workers ALTER COLUMN id SET DEFAULT nextval('pgmq.workers_id_seq'::regclass);
+
+
+--
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: pgmq; Owner: -
 --
 
 ALTER TABLE ONLY pgmq.jobs
     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workers workers_pkey; Type: CONSTRAINT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.workers
+    ADD CONSTRAINT workers_pkey PRIMARY KEY (id);
 
 
 --
