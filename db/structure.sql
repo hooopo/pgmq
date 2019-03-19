@@ -210,6 +210,24 @@ COMMENT ON COLUMN pgmq.jobs.worker_id IS 'Which worker run this job';
 
 
 --
+-- Name: dead_jobs; Type: TABLE; Schema: pgmq; Owner: -
+--
+
+CREATE TABLE pgmq.dead_jobs (
+)
+INHERITS (pgmq.jobs);
+
+
+--
+-- Name: done_jobs; Type: TABLE; Schema: pgmq; Owner: -
+--
+
+CREATE TABLE pgmq.done_jobs (
+)
+INHERITS (pgmq.jobs);
+
+
+--
 -- Name: jobs_id_seq; Type: SEQUENCE; Schema: pgmq; Owner: -
 --
 
@@ -312,6 +330,146 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: dead_jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+
+
+--
+-- Name: dead_jobs queue; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN queue SET DEFAULT 'default'::character varying;
+
+
+--
+-- Name: dead_jobs args; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN args SET DEFAULT '"[]"'::jsonb;
+
+
+--
+-- Name: dead_jobs priority; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN priority SET DEFAULT 5;
+
+
+--
+-- Name: dead_jobs state; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN state SET DEFAULT 'scheduled'::pgmq.state;
+
+
+--
+-- Name: dead_jobs reserve_for; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN reserve_for SET DEFAULT 600;
+
+
+--
+-- Name: dead_jobs retry; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN retry SET DEFAULT 25;
+
+
+--
+-- Name: dead_jobs backtrace; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN backtrace SET DEFAULT 0;
+
+
+--
+-- Name: dead_jobs custom; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN custom SET DEFAULT '"{}"'::jsonb;
+
+
+--
+-- Name: dead_jobs failure; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
+
+
+--
+-- Name: done_jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+
+
+--
+-- Name: done_jobs queue; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN queue SET DEFAULT 'default'::character varying;
+
+
+--
+-- Name: done_jobs args; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN args SET DEFAULT '"[]"'::jsonb;
+
+
+--
+-- Name: done_jobs priority; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN priority SET DEFAULT 5;
+
+
+--
+-- Name: done_jobs state; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN state SET DEFAULT 'scheduled'::pgmq.state;
+
+
+--
+-- Name: done_jobs reserve_for; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN reserve_for SET DEFAULT 600;
+
+
+--
+-- Name: done_jobs retry; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN retry SET DEFAULT 25;
+
+
+--
+-- Name: done_jobs backtrace; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN backtrace SET DEFAULT 0;
+
+
+--
+-- Name: done_jobs custom; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN custom SET DEFAULT '"{}"'::jsonb;
+
+
+--
+-- Name: done_jobs failure; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
+
+
+--
 -- Name: jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
@@ -364,6 +522,7 @@ ALTER TABLE ONLY public.schema_migrations
 SET search_path TO pgmq, public;
 
 INSERT INTO "schema_migrations" (version) VALUES
-('20190315222450');
+('20190315222450'),
+('20190319131734');
 
 
