@@ -51,14 +51,14 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE pgmq.jobs (
-    id bigint NOT NULL,
+    jid bigint NOT NULL,
     queue character varying DEFAULT 'default'::character varying,
     jobtype character varying NOT NULL,
     args jsonb DEFAULT '"[]"'::jsonb,
     priority integer DEFAULT 5,
     created_at timestamp without time zone,
     enqueued_at timestamp without time zone,
-    competed_at timestamp without time zone,
+    completed_at timestamp without time zone,
     state pgmq.state DEFAULT 'scheduled'::pgmq.state NOT NULL,
     at timestamp without time zone,
     redo_after integer,
@@ -122,10 +122,10 @@ COMMENT ON COLUMN pgmq.jobs.enqueued_at IS 'Worker will set this when it enqueue
 
 
 --
--- Name: COLUMN jobs.competed_at; Type: COMMENT; Schema: pgmq; Owner: -
+-- Name: COLUMN jobs.completed_at; Type: COMMENT; Schema: pgmq; Owner: -
 --
 
-COMMENT ON COLUMN pgmq.jobs.competed_at IS 'Worker will set when this job completed at.';
+COMMENT ON COLUMN pgmq.jobs.completed_at IS 'Worker will set when this job completed at.';
 
 
 --
@@ -243,7 +243,7 @@ CREATE SEQUENCE pgmq.jobs_id_seq
 -- Name: jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: pgmq; Owner: -
 --
 
-ALTER SEQUENCE pgmq.jobs_id_seq OWNED BY pgmq.jobs.id;
+ALTER SEQUENCE pgmq.jobs_id_seq OWNED BY pgmq.jobs.jid;
 
 
 --
@@ -330,10 +330,10 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: dead_jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
+-- Name: dead_jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
 
 
 --
@@ -400,10 +400,10 @@ ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
 
 
 --
--- Name: done_jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
+-- Name: done_jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
 
 
 --
@@ -470,10 +470,10 @@ ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
 
 
 --
--- Name: jobs id; Type: DEFAULT; Schema: pgmq; Owner: -
+-- Name: jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.jobs ALTER COLUMN id SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+ALTER TABLE ONLY pgmq.jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
 
 
 --
@@ -488,7 +488,7 @@ ALTER TABLE ONLY pgmq.workers ALTER COLUMN id SET DEFAULT nextval('pgmq.workers_
 --
 
 ALTER TABLE ONLY pgmq.jobs
-    ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT jobs_pkey PRIMARY KEY (jid);
 
 
 --
@@ -523,6 +523,7 @@ SET search_path TO pgmq, public;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20190315222450'),
-('20190319131734');
+('20190319131734'),
+('20190319133413');
 
 
