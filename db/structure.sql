@@ -54,7 +54,7 @@ CREATE TABLE pgmq.jobs (
     jid bigint NOT NULL,
     queue character varying DEFAULT 'default'::character varying,
     jobtype character varying NOT NULL,
-    args jsonb DEFAULT '"[]"'::jsonb,
+    args jsonb DEFAULT '[]'::jsonb,
     priority integer DEFAULT 5,
     created_at timestamp without time zone,
     enqueued_at timestamp without time zone,
@@ -210,6 +210,27 @@ COMMENT ON COLUMN pgmq.jobs.worker_id IS 'Which worker run this job';
 
 
 --
+-- Name: fetch_jobs(integer); Type: FUNCTION; Schema: pgmq; Owner: -
+--
+
+CREATE FUNCTION pgmq.fetch_jobs(lmt integer DEFAULT 1) RETURNS SETOF pgmq.jobs
+    LANGUAGE sql
+    AS $$
+  UPDATE jobs 
+     SET state = 'working'
+   WHERE jid = (
+                SELECT jid
+                  FROM jobs
+                 WHERE state = 'scheduled' AND at <= now()
+              ORDER BY priority DESC, at DESC NULLS LAST
+                       FOR UPDATE SKIP LOCKED
+                 LIMIT 1
+    )
+  RETURNING *;
+$$;
+
+
+--
 -- Name: dead_jobs; Type: TABLE; Schema: pgmq; Owner: -
 --
 
@@ -347,7 +368,7 @@ ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN queue SET DEFAULT 'default'::charac
 -- Name: dead_jobs args; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN args SET DEFAULT '"[]"'::jsonb;
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN args SET DEFAULT '[]'::jsonb;
 
 
 --
@@ -417,7 +438,7 @@ ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN queue SET DEFAULT 'default'::charac
 -- Name: done_jobs args; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN args SET DEFAULT '"[]"'::jsonb;
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN args SET DEFAULT '[]'::jsonb;
 
 
 --
@@ -532,6 +553,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190315222450'),
 ('20190319131734'),
 ('20190319133413'),
-('20190321145422');
+('20190321145422'),
+('20190321161603'),
+('20190321175446');
 
 
