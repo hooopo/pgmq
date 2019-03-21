@@ -6,15 +6,15 @@ class FetchJob < ActiveRecord::Migration[5.2]
         returns setof jobs 
         language sql
       AS $function$
-        UPDATE jobs 
+        UPDATE ONLY jobs 
            SET state = 'working'
-         WHERE jid = (
+         WHERE jid IN (
                       SELECT jid
-                        FROM jobs
+                        FROM  ONLY jobs
                        WHERE state = 'scheduled' AND at <= now()
-                    ORDER BY priority DESC, at DESC NULLS LAST
+                    ORDER BY at DESC NULLS LAST, priority DESC
                              FOR UPDATE SKIP LOCKED
-                       LIMIT 1
+                       LIMIT lmt
           )
         RETURNING *;
       $function$

@@ -216,15 +216,15 @@ COMMENT ON COLUMN pgmq.jobs.worker_id IS 'Which worker run this job';
 CREATE FUNCTION pgmq.fetch_jobs(lmt integer DEFAULT 1) RETURNS SETOF pgmq.jobs
     LANGUAGE sql
     AS $$
-  UPDATE jobs 
+  UPDATE ONLY jobs 
      SET state = 'working'
-   WHERE jid = (
+   WHERE jid IN (
                 SELECT jid
-                  FROM jobs
+                  FROM  ONLY jobs
                  WHERE state = 'scheduled' AND at <= now()
-              ORDER BY priority DESC, at DESC NULLS LAST
+              ORDER BY at DESC NULLS LAST, priority DESC
                        FOR UPDATE SKIP LOCKED
-                 LIMIT 1
+                 LIMIT lmt
     )
   RETURNING *;
 $$;
@@ -537,6 +537,13 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: idx_job_1; Type: INDEX; Schema: pgmq; Owner: -
+--
+
+CREATE INDEX idx_job_1 ON pgmq.jobs USING btree (state, at DESC NULLS LAST, priority DESC) WHERE (state = 'scheduled'::pgmq.state);
+
+
+--
 -- Name: index_workers_on_pid; Type: INDEX; Schema: pgmq; Owner: -
 --
 
@@ -555,6 +562,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190319133413'),
 ('20190321145422'),
 ('20190321161603'),
-('20190321175446');
+('20190321175446'),
+('20190321181237');
 
 
