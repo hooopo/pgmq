@@ -516,6 +516,13 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: index_workers_on_pid; Type: INDEX; Schema: pgmq; Owner: -
+--
+
+CREATE UNIQUE INDEX index_workers_on_pid ON pgmq.workers USING btree (pid);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -524,6 +531,7 @@ SET search_path TO pgmq, public;
 INSERT INTO "schema_migrations" (version) VALUES
 ('20190315222450'),
 ('20190319131734'),
-('20190319133413');
+('20190319133413'),
+('20190321145422');
 
 
