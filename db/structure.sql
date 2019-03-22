@@ -16,20 +16,6 @@ CREATE SCHEMA pgmq;
 
 
 --
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
 -- Name: state; Type: TYPE; Schema: pgmq; Owner: -
 --
 
@@ -65,8 +51,8 @@ CREATE TABLE pgmq.jobs (
     reserve_for integer DEFAULT 600,
     retry integer DEFAULT 25,
     backtrace integer DEFAULT 0,
-    custom jsonb DEFAULT '"{}"'::jsonb,
-    failure jsonb DEFAULT '"{}"'::jsonb,
+    custom jsonb DEFAULT '{}'::jsonb,
+    failure jsonb DEFAULT '{}'::jsonb,
     worker_id bigint,
     CONSTRAINT args CHECK ((jsonb_typeof(args) = 'array'::text))
 );
@@ -410,14 +396,14 @@ ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN backtrace SET DEFAULT 0;
 -- Name: dead_jobs custom; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN custom SET DEFAULT '"{}"'::jsonb;
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN custom SET DEFAULT '{}'::jsonb;
 
 
 --
 -- Name: dead_jobs failure; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN failure SET DEFAULT '{}'::jsonb;
 
 
 --
@@ -480,14 +466,14 @@ ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN backtrace SET DEFAULT 0;
 -- Name: done_jobs custom; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN custom SET DEFAULT '"{}"'::jsonb;
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN custom SET DEFAULT '{}'::jsonb;
 
 
 --
 -- Name: done_jobs failure; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN failure SET DEFAULT '"{}"'::jsonb;
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN failure SET DEFAULT '{}'::jsonb;
 
 
 --
@@ -537,10 +523,10 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: idx_job_1; Type: INDEX; Schema: pgmq; Owner: -
+-- Name: idx_job_2; Type: INDEX; Schema: pgmq; Owner: -
 --
 
-CREATE INDEX idx_job_1 ON pgmq.jobs USING btree (state, at DESC NULLS LAST, priority DESC) WHERE (state = 'scheduled'::pgmq.state);
+CREATE INDEX idx_job_2 ON pgmq.jobs USING btree (state, at DESC NULLS LAST, priority DESC, jid) WHERE (state = 'scheduled'::pgmq.state);
 
 
 --
@@ -563,6 +549,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190321145422'),
 ('20190321161603'),
 ('20190321175446'),
-('20190321181237');
+('20190321181237'),
+('20190321184924'),
+('20190322062701');
 
 
