@@ -2,7 +2,7 @@ class SetupTable < ActiveRecord::Migration[5.2]
   def change
     self.class.schema_search_path = 'pgmq, public'
     execute "CREATE SCHEMA IF NOT EXISTS pgmq"
-    execute "CREATE TYPE state AS ENUM ('scheduled', 'working', 'retry', 'dead', 'done')"
+    execute "CREATE TYPE state AS ENUM ('scheduled', 'working', 'dead', 'done')"
 
     create_table :workers, comment: 'Workers for pgmq' do |t|
       t.string :hostname, null: false, comment: 'Worker hostname'

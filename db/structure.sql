@@ -22,7 +22,6 @@ CREATE SCHEMA pgmq;
 CREATE TYPE pgmq.state AS ENUM (
     'scheduled',
     'working',
-    'retry',
     'dead',
     'done'
 );
