@@ -46,7 +46,7 @@ CREATE TABLE pgmq.jobs (
     enqueued_at timestamp without time zone,
     completed_at timestamp without time zone,
     state pgmq.state DEFAULT 'scheduled'::pgmq.state NOT NULL,
-    at timestamp without time zone,
+    at timestamp without time zone DEFAULT '1111-01-01 00:00:00'::timestamp without time zone,
     redo_after integer,
     reserve_for integer DEFAULT 600,
     retry integer DEFAULT 25,
@@ -208,7 +208,7 @@ CREATE FUNCTION pgmq.fetch_jobs(lmt integer DEFAULT 1) RETURNS SETOF pgmq.jobs
                 SELECT jid
                   FROM  ONLY jobs
                  WHERE state = 'scheduled' AND at <= now()
-              ORDER BY at DESC NULLS LAST, priority DESC
+              ORDER BY at DESC, priority DESC
                        FOR UPDATE SKIP LOCKED
                  LIMIT lmt
     )
@@ -372,6 +372,13 @@ ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN state SET DEFAULT 'scheduled'::pgmq
 
 
 --
+-- Name: dead_jobs at; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN at SET DEFAULT '1111-01-01 00:00:00'::timestamp without time zone;
+
+
+--
 -- Name: dead_jobs reserve_for; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
@@ -439,6 +446,13 @@ ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN priority SET DEFAULT 5;
 --
 
 ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN state SET DEFAULT 'scheduled'::pgmq.state;
+
+
+--
+-- Name: done_jobs at; Type: DEFAULT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN at SET DEFAULT '1111-01-01 00:00:00'::timestamp without time zone;
 
 
 --
@@ -526,7 +540,7 @@ ALTER TABLE ONLY public.schema_migrations
 -- Name: idx_job_2; Type: INDEX; Schema: pgmq; Owner: -
 --
 
-CREATE INDEX idx_job_2 ON pgmq.jobs USING btree (state, at DESC NULLS LAST, priority DESC, jid) WHERE (state = 'scheduled'::pgmq.state);
+CREATE INDEX idx_job_2 ON pgmq.jobs USING btree (state, at DESC, priority DESC, jid) WHERE (state = 'scheduled'::pgmq.state);
 
 
 --

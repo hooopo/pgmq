@@ -23,7 +23,7 @@ class SetupTable < ActiveRecord::Migration[5.2]
       t.datetime :enqueued_at, comment: 'Worker will set this when it enqueues a job'
       t.datetime :competed_at, comment: 'Worker will set when this job completed at.'
       t.column :state, :state, default: 'scheduled', comment: 'state for current job', null: false
-      t.datetime :at, comment: <<~COMMENT
+      t.datetime :at, default: '1111-01-01', comment: <<~COMMENT
         Schedule a job to run at a point in time. 
         The job will be enqueued within a few seconds of that point in time. 
       COMMENT

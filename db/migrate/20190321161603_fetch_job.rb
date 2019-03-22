@@ -12,7 +12,7 @@ class FetchJob < ActiveRecord::Migration[5.2]
                       SELECT jid
                         FROM  ONLY jobs
                        WHERE state = 'scheduled' AND at <= now()
-                    ORDER BY at DESC NULLS LAST, priority DESC
+                    ORDER BY at DESC, priority DESC
                              FOR UPDATE SKIP LOCKED
                        LIMIT lmt
           )
