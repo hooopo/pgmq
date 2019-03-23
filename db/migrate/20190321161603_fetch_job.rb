@@ -7,7 +7,7 @@ class FetchJob < ActiveRecord::Migration[5.2]
         language sql
       AS $function$
         UPDATE ONLY jobs 
-           SET state = 'working'
+           SET state = 'working', enqueued_at = now()
          WHERE jid IN (
                       SELECT jid
                         FROM  ONLY jobs
