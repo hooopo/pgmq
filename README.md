@@ -28,6 +28,7 @@
 * [x] persistent jobs
 * [x] retries with backoff
 * [ ] cron job
+* [ ] broadcast msg to multiple queues
 * [ ] job dependencies
 * [ ] rate limiting
 * [ ] unique jobs
