@@ -22,12 +22,13 @@
 ## Features
 
 * [x] multiple named queues
+* [x] exactly once
 * [x] priorities
-* [ ] cron job
 * [x] delayed jobs
-* [ ] job dependencies
 * [x] persistent jobs
 * [x] retries with backoff
+* [ ] cron job
+* [ ] job dependencies
 * [ ] rate limiting
 * [ ] unique jobs
 * [ ] expire jobs
