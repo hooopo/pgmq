@@ -27,6 +27,34 @@ CREATE TYPE pgmq.state AS ENUM (
 );
 
 
+--
+-- Name: archive_dead_jobs(); Type: FUNCTION; Schema: pgmq; Owner: -
+--
+
+CREATE FUNCTION pgmq.archive_dead_jobs() RETURNS void
+    LANGUAGE sql
+    AS $$
+  WITH deleted AS (
+    DELETE FROM ONLY jobs WHERE state = 'dead' RETURNING *
+  )
+  INSERT INTO dead_jobs SELECT * FROM deleted;
+$$;
+
+
+--
+-- Name: archive_done_jobs(); Type: FUNCTION; Schema: pgmq; Owner: -
+--
+
+CREATE FUNCTION pgmq.archive_done_jobs() RETURNS void
+    LANGUAGE sql
+    AS $$
+  WITH deleted AS (
+    DELETE FROM ONLY jobs WHERE state = 'done' RETURNING *
+  )
+  INSERT INTO done_jobs SELECT * FROM deleted;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -504,6 +532,22 @@ ALTER TABLE ONLY pgmq.workers ALTER COLUMN id SET DEFAULT nextval('pgmq.workers_
 
 
 --
+-- Name: dead_jobs dead_jobs_pkey; Type: CONSTRAINT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.dead_jobs
+    ADD CONSTRAINT dead_jobs_pkey PRIMARY KEY (jid);
+
+
+--
+-- Name: done_jobs done_jobs_pkey; Type: CONSTRAINT; Schema: pgmq; Owner: -
+--
+
+ALTER TABLE ONLY pgmq.done_jobs
+    ADD CONSTRAINT done_jobs_pkey PRIMARY KEY (jid);
+
+
+--
 -- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: pgmq; Owner: -
 --
 
@@ -564,6 +608,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190321175446'),
 ('20190321181237'),
 ('20190321184924'),
-('20190322062701');
+('20190322062701'),
+('20190325042219');
 
 
