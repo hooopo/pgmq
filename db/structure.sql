@@ -16,6 +16,20 @@ CREATE SCHEMA pgmq;
 
 
 --
+-- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA pgmq;
+
+
+--
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+
+--
 -- Name: state; Type: TYPE; Schema: pgmq; Owner: -
 --
 
@@ -64,7 +78,7 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE pgmq.jobs (
-    jid bigint NOT NULL,
+    jid uuid DEFAULT pgmq.uuid_generate_v4() NOT NULL,
     queue character varying DEFAULT 'default'::character varying,
     jobtype character varying NOT NULL,
     args jsonb DEFAULT '[]'::jsonb,
@@ -230,7 +244,7 @@ CREATE FUNCTION pgmq.fetch_jobs(lmt integer DEFAULT 1) RETURNS SETOF pgmq.jobs
     LANGUAGE sql
     AS $$
   UPDATE ONLY jobs 
-     SET state = 'working'
+     SET state = 'working', enqueued_at = now()
    WHERE jid IN (
                 SELECT jid
                   FROM  ONLY jobs
@@ -259,25 +273,6 @@ INHERITS (pgmq.jobs);
 CREATE TABLE pgmq.done_jobs (
 )
 INHERITS (pgmq.jobs);
-
-
---
--- Name: jobs_id_seq; Type: SEQUENCE; Schema: pgmq; Owner: -
---
-
-CREATE SEQUENCE pgmq.jobs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: jobs_id_seq; Type: SEQUENCE OWNED BY; Schema: pgmq; Owner: -
---
-
-ALTER SEQUENCE pgmq.jobs_id_seq OWNED BY pgmq.jobs.jid;
 
 
 --
@@ -367,7 +362,7 @@ CREATE TABLE public.schema_migrations (
 -- Name: dead_jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN jid SET DEFAULT pgmq.uuid_generate_v4();
 
 
 --
@@ -444,7 +439,7 @@ ALTER TABLE ONLY pgmq.dead_jobs ALTER COLUMN failure SET DEFAULT '{}'::jsonb;
 -- Name: done_jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
 --
 
-ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
+ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN jid SET DEFAULT pgmq.uuid_generate_v4();
 
 
 --
@@ -515,13 +510,6 @@ ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN custom SET DEFAULT '{}'::jsonb;
 --
 
 ALTER TABLE ONLY pgmq.done_jobs ALTER COLUMN failure SET DEFAULT '{}'::jsonb;
-
-
---
--- Name: jobs jid; Type: DEFAULT; Schema: pgmq; Owner: -
---
-
-ALTER TABLE ONLY pgmq.jobs ALTER COLUMN jid SET DEFAULT nextval('pgmq.jobs_id_seq'::regclass);
 
 
 --
@@ -609,6 +597,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190321181237'),
 ('20190321184924'),
 ('20190322062701'),
-('20190325042219');
+('20190325042219'),
+('20190325203524');
 
 
